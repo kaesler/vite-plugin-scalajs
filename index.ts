@@ -1,4 +1,5 @@
 import { spawn, SpawnOptions } from "child_process";
+import { stripVTControlCharacters } from 'node:util';
 import type { Plugin as VitePlugin } from "vite";
 
 // Utility to invoke a given sbt task and fetch its output
@@ -30,10 +31,14 @@ function printSbtTask(task: string, cwd?: string): Promise<string> {
         if (fullOutput.includes("Not a valid command: --")) {
           errorMessage += "\nCause: Your sbt launcher script version is too old (<1.3.3)."
           errorMessage += "\nFix: Re-install the latest version of sbt launcher script from https://www.scala-sbt.org/"
+          errorMessage += fullOutput
         }
         reject(new Error(errorMessage));
       } else {
-        resolve(fullOutput.trimEnd().split('\n').at(-1)!);
+        
+        const array = fullOutput.trimEnd().split('\n').map(stripVTControlCharacters);
+        const pathName = array.find((s) => s.startsWith("/"));
+        resolve(pathName!);
       }
     });
   });
